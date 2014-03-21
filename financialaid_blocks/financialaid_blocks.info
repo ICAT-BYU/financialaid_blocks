@@ -1,0 +1,5 @@
+name = Financial Aid Blocks
+description = A block module for creating custom blocks for the Finanial Aid Website
+core = 7.x
+files[] = financialaid_blocks.module
+stylesheets[all][] = css/financialaid_blocks.css

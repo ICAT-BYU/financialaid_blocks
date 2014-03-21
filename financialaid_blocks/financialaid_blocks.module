@@ -1,0 +1,369 @@
+<?php
+/**
+ *  @file
+ *  A block module that builds custom blocks for the BYU Financial Aid Website
+ */
+ 
+/**
+ * Implements hook_help.
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function financialaid_blocks_help($path, $arg){
+  switch($path){
+    case "admin/help#financialaid_blocks":
+      return '<p>' . t("Creates custom blocks for the BYU OneStop site here") . '</p>';
+      break;
+  }
+}
+
+function financialaid_blocks_init(){
+    $module_path = drupal_get_path('module', 'financialaid_blocks');
+    drupal_add_js(array("thisModule"=> array('modulePath' => $module_path)), "setting");
+}
+
+
+/**
+ * Implements hook_block_info().
+ */
+function financialaid_blocks_block_info(){
+  $blocks['financialaid_left_sidebar'] = array(
+    'info' => t("Financial Aid Left Sidebar"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['financialaid_node_image'] = array(
+    'info' => t("Financial Aid Node Image"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['financialaid_facebook_block'] = array(
+    'info' => t("Financial Aid Facebook Comments Block"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['financialaid_related_links_block'] = array(
+    'info' => t("Financial Aid Related Links Block"),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  $blocks['financialaid_related_sites_block'] = array(
+    'info' => t("Financial Aid Related Sites Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['financialaid_waterfall_block'] = array(
+    'info' => t("Financial Aid Waterfall Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['financialaid_search_slider_block'] = array(
+    'info' => t("Financial Aid Search Slider Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+  return $blocks;
+}
+
+/**
+ *  Implements hook_block_view().
+ */
+
+function financialaid_blocks_block_view($block_name = ""){
+  switch ($block_name){
+    case 'financialaid_left_sidebar':
+      $block['subject'] = t('Financial Aid Left Sidebar');
+      $block['content'] = financialaid_blocks_financialaid_left_sidebar();
+      return $block;
+    case 'financialaid_node_image':
+      $block['subject'] = t('Financial Aid Node Image');
+      $block['content'] = financialaid_blocks_financialaid_node_image();
+      return $block;
+    case 'financialaid_facebook_block':
+      $block['subject'] = t("Financial Aid Facebook Comments Block");
+      $block['content'] = financialaid_blocks_facebook_block();
+      return $block;
+    case 'financialaid_related_links_block':
+      $block['subject'] = t("Financial Aid Related Links Block");
+      $block['content'] = financialaid_blocks_related_links_block();
+      return $block;
+    case 'financialaid_related_sites_block':
+      $block['subject'] = t("Financial Aid Related Sites Block");
+      $block['content'] = financialaid_blocks_related_sites_block();
+      return $block;
+    case 'financialaid_waterfall_block':
+      $block['subject'] = t("Financial Aid Waterfall Block");
+      $block['content'] = financialaid_blocks_waterfall_block();
+      return $block;
+    case 'financialaid_search_slider_block':
+      $block['subject'] = t("Financial Aid Search Slider Block");
+      $block['content'] = financialaid_blocks_search_slider();
+      return $block;
+  }
+  
+}
+
+
+function financialaid_blocks_search_slider() {
+    drupal_add_css('.search-region {overflow:hidden;}','inline');
+    drupal_add_css('.container-inline {position:relative;z-index:100;}','inline');
+    drupal_add_css('#fake-search {position:relative;top:-25px;left:183px;z-index:200;height:25px;}','inline');
+    $js = "(function ($) { jQuery(document).ready(function($) { ";
+    
+    $js.= " $('.header .container-inline').css({ 'left':'250px' }); ";
+    $js.= " $('.header .container-inline #edit-submit').css({ 'position':'relative','z-index':'1' }); ";
+    $js.= " $('.header .container-inline').after('<img id=\"fake-search\"  src=\"/sites/financialaid.byu.edu/modules/custom/financialaid_blocks/images/fakesearch.png\" />'); ";
+    $js.= " $('#fake-search').click( function() { $('.container-inline').animate({ left: '0px' },400, function(){ $('#fake-search').remove(); $('#edit-search-block-form--2').focus();} );  }); ";
+
+    /*$js.= " $('#edit-search-block-form--2').blur( function() { if($('#edit-search-block-form--2').val() == 'Search') { 
+$('#fake-search').css({'z-index':'100'});    $('.header .container-inline').delay(300).animate({ left: '250px' },800 ); } else { $('#fake-search').css({'z-index':'100'});    $('.header .container-inline').delay(3000).animate({ left: '250px' },400 ); } }); ";*/
+    
+    $js.= " }); }(jQuery)); ";
+    drupal_add_js($js, 'inline');
+}
+
+
+function financialaid_blocks_financialaid_left_sidebar(){
+  $URL = explode('/',current_path());
+  global $base_url;
+  
+  if($URL[0] === 'node'){ $node = node_load($URL[1]); }
+    
+  if(isset($node->field_page_category['und'][0]['tid'])) {
+    $taxonomy = $node->field_page_category['und'][0]['tid'];
+  }
+  
+  if(isset($node->field_page_icon['und'][0]['target_id'])){
+    $icon_node = node_load($node->field_page_icon['und'][0]['target_id']);
+    $iconSVG = $icon_node->field_svg_icon['und'][0]['uri'];
+    $iconURL = file_create_url($iconSVG);
+  }
+  $icon = '<div class="node-block-icon taxonomy-'.$taxonomy.'"><img src="' .$iconURL. '"</div>';
+  
+  if(isset($node->field_do_it_link['und'][0]['url'])){
+    $link_url = $node->field_do_it_link['und'][0]['url'];
+  }
+  
+  if(isset($link_url)){
+    $link = '<div class="do-it-link-div"><a href="'.$link_url.'" class="do-it-link">Do it</a></div>';
+  } else {
+    $link = '';
+  }
+  
+  $output = '<div class="page-left-sidebar"><div class="heightfix"></div>'.$icon.'</div><div class="sidebar-links clearfix">'.$link.'</div>';
+  return $output;
+}
+
+function financialaid_blocks_financialaid_node_image(){
+  $URL = explode('/',current_path());
+  if($URL[0] === 'node'){ $node = node_load($URL[1]); }
+ 
+    // Loop through Images and Videos - set up XSlider
+    $module_path = drupal_get_path('module', 'financialaid_blocks');
+    $output = '<script src="https://www.youtube.com/iframe_api"></script>';
+    $output.= '<link href="/' . $module_path . '/XSlider/anythingslider.css" rel="stylesheet">'; 
+    $output.= '<script src="/' . $module_path . '/XSlider/jquery.anythingslider.min.js"></script>'; 
+    $output.= '<script src="/' . $module_path . '/XSlider/XSlider.js"></script>'; 
+
+    $sliderOutput = '<ul id="imageSlider">';
+    if (isset($node->field_page_cover['und'])) {
+        foreach($node->field_page_cover['und'] as $slideNodeID) {
+            $slideNode = node_load($slideNodeID['target_id']);
+            if (isset($slideNode->type)) {
+                if (isset($slideNode->field_display_title['und'][0]['value'])) {
+                    $caption = '<div class="caption-bottom">' . $slideNode->field_display_title['und'][0]['value'] . '</div>';
+                } else {
+                    $caption = '';
+                }
+                if ($slideNode->type == "content_video") {
+                    $vidID = $slideNode->field_youtube_video['und'][0]['video_id'];
+                    $res = get_highest_quality($vidID);
+                    $sliderOutput.= '<li><img id="youtube-slide:' .$vidID. '" src="https://i.ytimg.com/vi/' .$vidID. '/' .$res. '.jpg">' .$caption. '</li>';
+                } else if ($slideNode->type == "content_image") {
+                    $imgURI = $slideNode->field_image['und'][0]['uri'];
+                    $imgURL = file_create_url($imgURI);
+                    $sliderOutput.= '<li><img src="' .$imgURL. '" alt="">' .$caption. '</li>';
+                }
+            }
+        }
+    }
+    $sliderOutput.= '</ul>';
+    
+    $output.= '<div id="XSliderContainer" style="width:100%;">' .$sliderOutput. '</div>';
+    return $output;
+  
+}
+
+function get_highest_quality($vidID) {
+
+    // Does MAXRES Exist
+    $maxUrl = "http://i.ytimg.com/vi/".$vidID."/maxresdefault.jpg";
+    $maxHead = get_headers($maxUrl);
+    if (strpos($maxHead[0], "200 OK") !== false) return "maxresdefault";
+    
+    // Find Best Available RES
+    $resolutions = array("sddefault", "hqdefault", "mqdefault");
+    $json = file_get_contents("http://gdata.youtube.com/feeds/api/videos/". $vidID ."?v=2&alt=json");
+    foreach($resolutions as $res) {
+        if ( strpos($json, $res) !== false ) return $res;
+    }
+    
+    // Use DEFAULT RES
+    return "default";
+}
+
+
+
+function financialaid_blocks_facebook_block(){
+
+  global $base_url;
+  $current_path = current_path();
+	
+  $output = '<div class="fb-comments" data-href="'.$base_url .  '/' . $current_path . '" data-width="630" data-num-posts="10"></div>';
+
+  return $output;
+}
+
+function financialaid_blocks_related_links_block(){
+  $URL = explode('/',current_path());
+  global $base_url;
+  if($URL[0] === 'node'){ $node = node_load($URL[1]); }
+  //dsm($node);
+  
+  $output='<h2 class="related-links-title">Related Links</h2>';
+  return $output;
+}
+
+function financialaid_blocks_related_sites_block(){
+  $module_path = drupal_get_path('module', 'financialaid_blocks');
+  global $base_url;
+   $output = '<span class="hidden-region-link-2"><a href="#" id="hidden-region-link-2"><img src="'.$base_url.'/'.$module_path.'/images/close.svg"/></a></span>';
+  $output .= '<ul>';
+    $output .= '<li><a href="http://home.byu.edu/home" target="_blank"><span class="related-sites-img home"></span></a><a href="http://home.byu.edu/home" target="_blank" class="related-sites-link home">BYU.edu</a></li>';
+    $output .= '<li><a href="http://onestop.byu.edu" target="_blank"><span class="related-sites-img onestop"></span></a><a href="http://onestop.byu.edu" target="_blank" class="related-sites-link onestop">OneStop</a></li>';
+    $output .= '<li><a href="http://registrar.byu.edu" target="_blank"><span class="related-sites-img registrar"></span></a><a href="http://registrar.byu.edu" target="_blank" class="related-sites-link registrar">Registrar</a></li>';
+    $output .= '<li><a href="http://b4.byu.edu" target="_blank"><span class="related-sites-img admissions"></span></a><a href="http://b4.byu.edu" target="_blank" class="related-sites-link admissions">Admissions</a></li>';
+  $output .= '</ul>';
+ 
+  return $output;
+}
+
+function financialaid_blocks_waterfall_block() {
+    $path = current_path();
+    $pageArray = explode ("/",$path);
+    $viewArg = "";
+    if (isset($pageArray[1])) {
+        $viewArg = $pageArray[1];
+    }
+
+    $tmp = views_get_view('section');
+    $tmp->set_display("page");
+    $tmp->set_arguments(array($viewArg));
+    $tmp->execute();
+    $view = $tmp->result;
+    
+    //$var = print_r($view,true);
+    //file_put_contents("/var/www/html/sites/financialaid.byu.edu/modules/custom/financialaid_blocks/temp.txt",$var);
+    
+    $output = "<div class='waterfall view view-section'><div class='view-content' data-width='300'>";
+    foreach($view as $nodeInfo) {
+        $outputLNK = "";
+        $outputIMG = "";
+        $outputTTL = "";
+        $outputICO = "";
+        $outputSVG = "";
+        $outputTXT = "";
+        $outputBIG = "";
+        $outputTAX = "";
+        
+        $thisNid = $nodeInfo->nid;
+        $alias = db_query("SELECT alias FROM url_alias WHERE source = :source limit 1", array(":source" => "node/". $thisNid))->fetchField();
+        $outputLNK = "/" . $alias;
+        
+        if (isset($nodeInfo->field_field_youtube_video[0]["rendered"])) {
+            $thisVid = $nodeInfo->field_field_youtube_video[0]["rendered"]["#video_id"];
+            $thisUri = "public://youtube/" . $thisVid . ".png";
+            $thisStyle = $nodeInfo->field_field_youtube_video[0]["rendered"]["#image_style"];
+            $thisUrl = image_style_url($thisStyle, $thisUri);
+            $outputIMG = $thisUrl;
+        } 
+        if (isset($nodeInfo->field_field_image[0]["rendered"])) {
+            $thisImg = $nodeInfo->field_field_image[0]["rendered"]["#item"]["filename"];
+            $thisWidth = $nodeInfo->field_field_image[0]["rendered"]["#item"]["width"];
+            $thisHeight = $nodeInfo->field_field_image[0]["rendered"]["#item"]["height"];
+            $thisUri = $nodeInfo->field_field_image[0]["rendered"]["#item"]["uri"];
+            $thisStyle = $nodeInfo->field_field_image[0]["rendered"]["#image_style"];
+            $thisUrl = image_style_url($thisStyle, $thisUri);
+            $outputIMG = $thisUrl;
+        }
+        
+        $outputTTL = $nodeInfo->node_title;
+        
+        if (isset($nodeInfo->field_field_icon[0]["rendered"])) {
+            $thisImg = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["filename"];
+            $thisWidth = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["width"];
+            $thisHeight = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["height"];
+            $thisUri = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["uri"];
+            $thisStyle = $nodeInfo->field_field_icon[0]["rendered"]["#image_style"];
+            $thisUrl = image_style_url($thisStyle, $thisUri);
+            $outputICO = $thisUrl;
+        }
+
+        if (isset($nodeInfo->field_field_svg_icon[0]["rendered"])) {
+            $thisImg = $nodeInfo->field_field_svg_icon[0]["rendered"]["#file"]->filename;
+            $thisUri = $nodeInfo->field_field_svg_icon[0]["rendered"]["#file"]->uri;
+            $thisUrl = file_create_url($thisUri);
+            $outputSVG = $thisUrl;
+        }
+
+        if (isset($nodeInfo->field_body[0]["rendered"])) {
+            $thisMarkup = $nodeInfo->field_body[0]["rendered"]["#markup"];
+            $outputTXT = $thisMarkup;
+         
+        }
+        
+        if (isset($nodeInfo->field_field_size[0]["rendered"])) {
+            $thisMarkup = $nodeInfo->field_field_size[0]["rendered"]["#markup"];
+            $outputBIG = $thisMarkup;
+         
+        }
+        
+        if (isset($nodeInfo->field_field_page_category[0]["raw"])) {
+            $thisMarkup = $nodeInfo->field_field_page_category[0]["raw"]["tid"];
+            $outputTAX = $thisMarkup;
+        }
+        $output .= "<div class='item views-row' data-span='" .$outputBIG. "'>";
+        $output .= "<div class='waterfall-item-container'>";
+        $output .= "<div class='waterfall-item-image views-field views-field-field-youtube-video views-field-field-image'><a href='" .$outputLNK. "'><img src='" .$outputIMG. "'></a></div>";
+        $output .= "<div class='waterfall-item-content'>";
+        $output .= "<div class='waterfall-item-icon views-field views-field-field-icon taxonomy-".$outputTAX."'><a href='" .$outputLNK. "'><img src='" .$outputSVG. "'></a></div>";
+        $output .= "<div class='waterfall-item-title views-field views-field-title'><span><a href='" .$outputLNK. "'>" .$outputTTL. "</a></span></div>";
+        $output .= "<div class='waterfall-item-body views-field views-field-body'><span>" .$outputTXT. "</span></div>";
+        $output .= "</div></div></div>";
+    }
+    $output .= "</div></div>";
+    
+    // remove non printable characters from output
+    $output = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $output);
+    
+    // escape single quotes
+    $output = str_replace("'", "\'", $output);
+
+    // ================================= ADD JAVASCRIPT =========================================
+    $jScript = " (function ($) { jQuery(document).ready(function($) { ";
+        // HIDE CURRENT VIEW
+        $jScript.= " $('.view').remove(); ";
+        // INSERT REBUILT VIEW
+        $jScript.= " $('" .$output. "').insertAfter('#main-content'); ";
+        // RUN WATERFALL
+        $jScript.= " var wf = $('.view-content').waterfall(); ";
+        // ADJUST WHITESPACE
+        $jScript.= " function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<10){myPad=10;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
+        $jScript.= " rePadWaterfall(); ";
+        $jScript.= " $( window ).resize(function() { rePadWaterfall(); }); ";
+        
+    $jScript.= " }); }(jQuery)); ";
+    
+    drupal_add_js($jScript, 'inline');
+
+}
+

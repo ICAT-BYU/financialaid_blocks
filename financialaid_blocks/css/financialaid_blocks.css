@@ -1,0 +1,64 @@
+/* Related Sites block */
+#block-financialaid-blocks-financialaid-related-sites-block{
+  text-align:center;  
+  margin-bottom:0;  
+}
+#block-financialaid-blocks-financialaid-related-sites-block ul{
+  margin-top:0;  
+  margin-bottom:0;  
+  padding-top:1em;  
+  padding-bottom:1em;  
+}
+#block-financialaid-blocks-financialaid-related-sites-block ul li{
+  display:inline-block;  
+  width:150px;  
+  height:130px;  
+}
+
+.related-sites-img.home{
+  width:100px;  
+  height: 100px;  
+  background-color:blue;  
+  display:inline-block;  
+  
+}
+.related-sites-img.onestop{
+  width:100px;  
+  height: 100px;  
+  background-color:red;  
+  display:inline-block;  
+  
+}
+.related-sites-img.registrar{
+  width:100px;  
+  height: 100px;  
+  background-color:teal;  
+  display:inline-block;  
+  
+}
+.related-sites-img.admissions{
+  width:100px;  
+  height: 100px;  
+  background-color:lightblue;  
+  display:inline-block;  
+  
+}
+
+.related-sites-link{
+  font-weight:bold;  
+  font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;  
+  color:#444444;  
+  text-decoration:none;  
+}
+
+.hidden-region-link-2{
+  float:right;  
+  width:30px;  
+  margin-left:-100%;
+  margin-right:5px;  
+  
+}
+.hidden-region-link-2 a{
+  text-decoration:none;  
+  color:#444;  
+}

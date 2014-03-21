@@ -236,8 +236,8 @@ function financialaid_blocks_related_links_block(){
 function financialaid_blocks_related_sites_block(){
   $module_path = drupal_get_path('module', 'financialaid_blocks');
   global $base_url;
-   $output = '<span class="hidden-region-link-2"><a href="#" id="hidden-region-link-2"><img src="'.$base_url.'/'.$module_path.'/images/close.svg"/></a></span>';
-  $output .= '<ul>';
+
+  $output = '<ul>';
     $output .= '<li><a href="http://home.byu.edu/home" target="_blank"><span class="related-sites-img home"></span></a><a href="http://home.byu.edu/home" target="_blank" class="related-sites-link home">BYU.edu</a></li>';
     $output .= '<li><a href="http://onestop.byu.edu" target="_blank"><span class="related-sites-img onestop"></span></a><a href="http://onestop.byu.edu" target="_blank" class="related-sites-link onestop">OneStop</a></li>';
     $output .= '<li><a href="http://registrar.byu.edu" target="_blank"><span class="related-sites-img registrar"></span></a><a href="http://registrar.byu.edu" target="_blank" class="related-sites-link registrar">Registrar</a></li>';
@@ -254,114 +254,132 @@ function financialaid_blocks_waterfall_block() {
     if (isset($pageArray[1])) {
         $viewArg = $pageArray[1];
     }
-
+    
     $tmp = views_get_view('section');
     $tmp->set_display("page");
     $tmp->set_arguments(array($viewArg));
     $tmp->execute();
     $view = $tmp->result;
-    
-    //$var = print_r($view,true);
-    //file_put_contents("/var/www/html/sites/financialaid.byu.edu/modules/custom/financialaid_blocks/temp.txt",$var);
-    
-    $output = "<div class='waterfall view view-section'><div class='view-content' data-width='300'>";
+
+    $waterfallTiles = Array();
     foreach($view as $nodeInfo) {
+        $thisNid = $nodeInfo->nid;
         $outputLNK = "";
         $outputIMG = "";
-        $outputTTL = "";
-        $outputICO = "";
         $outputSVG = "";
         $outputTXT = "";
-        $outputBIG = "";
+        $outputTTL = "";
+        $outputBIG = "1";
         $outputTAX = "";
         
-        $thisNid = $nodeInfo->nid;
+        $thisNode = node_load($thisNid);
+        // TITLE
+        $outputTTL = $thisNode->title;
+        
+        // LINK
         $alias = db_query("SELECT alias FROM url_alias WHERE source = :source limit 1", array(":source" => "node/". $thisNid))->fetchField();
         $outputLNK = "/" . $alias;
         
-        if (isset($nodeInfo->field_field_youtube_video[0]["rendered"])) {
-            $thisVid = $nodeInfo->field_field_youtube_video[0]["rendered"]["#video_id"];
-            $thisUri = "public://youtube/" . $thisVid . ".png";
-            $thisStyle = $nodeInfo->field_field_youtube_video[0]["rendered"]["#image_style"];
-            $thisUrl = image_style_url($thisStyle, $thisUri);
-            $outputIMG = $thisUrl;
-        } 
-        if (isset($nodeInfo->field_field_image[0]["rendered"])) {
-            $thisImg = $nodeInfo->field_field_image[0]["rendered"]["#item"]["filename"];
-            $thisWidth = $nodeInfo->field_field_image[0]["rendered"]["#item"]["width"];
-            $thisHeight = $nodeInfo->field_field_image[0]["rendered"]["#item"]["height"];
-            $thisUri = $nodeInfo->field_field_image[0]["rendered"]["#item"]["uri"];
-            $thisStyle = $nodeInfo->field_field_image[0]["rendered"]["#image_style"];
-            $thisUrl = image_style_url($thisStyle, $thisUri);
-            $outputIMG = $thisUrl;
+        // TILE SIZE
+        if (isset($thisNode->field_size["und"][0]["value"])) {
+            $outputBIG = $thisNode->field_size["und"][0]["value"];
         }
         
-        $outputTTL = $nodeInfo->node_title;
-        
-        if (isset($nodeInfo->field_field_icon[0]["rendered"])) {
-            $thisImg = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["filename"];
-            $thisWidth = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["width"];
-            $thisHeight = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["height"];
-            $thisUri = $nodeInfo->field_field_icon[0]["rendered"]["#item"]["uri"];
-            $thisStyle = $nodeInfo->field_field_icon[0]["rendered"]["#image_style"];
-            $thisUrl = image_style_url($thisStyle, $thisUri);
-            $outputICO = $thisUrl;
+        // TAXONOMY CATEGORY
+        if (isset($thisNode->field_page_category['und'][0]['tid'])) {
+            $outputTAX = $thisNode->field_page_category['und'][0]['tid'];
         }
+        
+        // SVG ICON URL
+        if (isset($thisNode->field_page_icon['und'][0]['target_id'])) {
+            $iconNode = node_load($thisNode->field_page_icon['und'][0]['target_id']);
+            if (isset($iconNode->field_svg_icon['und'][0]['uri'])) {
+                $thisUri = $iconNode->field_svg_icon['und'][0]['uri'];
+                $thisUrl = file_create_url($thisUri);
+                $outputSVG = $thisUrl;
+            }
+        }
+        
+        // TEXT SUMMARY
+        if (isset($thisNode->field_content['und'][0]['target_id'])) {
+            $contentNodeID = $thisNode->field_content['und'][0]['target_id'];
+            $contentNode = node_load($contentNodeID);
+            $markup =  $contentNode->body['und'][0]['value'];
 
-        if (isset($nodeInfo->field_field_svg_icon[0]["rendered"])) {
-            $thisImg = $nodeInfo->field_field_svg_icon[0]["rendered"]["#file"]->filename;
-            $thisUri = $nodeInfo->field_field_svg_icon[0]["rendered"]["#file"]->uri;
-            $thisUrl = file_create_url($thisUri);
-            $outputSVG = $thisUrl;
+            // REMOVE TABLES
+            $pattern = '%<table\b[^>]*+>(?:(?R)|[^<]*+(?:(?!</?table\b)<[^<]*+)*+)*+</table>%i';
+            $replace = ' ';
+            $markup = preg_replace($pattern, $replace, $markup);
+            
+            // REMOVE NON PRINTABLE CHARACTERS
+            $markup = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $markup);
+            
+            // TAKE SAMPLE OF REMAINING
+            $alter['html'] = true;
+            $alter['word_boundary'] = true;
+            $alter['ellipsis'] = true;
+            $alter['max_length'] = 337;
+            $outputTXT = views_trim_text($alter, $markup);                
         }
+ 
+        // IMAGE or YOUTUBE THUMBNAIL
+        if (isset($thisNode->field_page_cover['und'][0]['target_id'])) {
+            $mediaNodeID = $thisNode->field_page_cover['und'][0]['target_id'];
+            $mediaNode = node_load($mediaNodeID);
 
-        if (isset($nodeInfo->field_body[0]["rendered"])) {
-            $thisMarkup = $nodeInfo->field_body[0]["rendered"]["#markup"];
-            $outputTXT = $thisMarkup;
-         
+            // IMAGE 
+            if (isset($mediaNode->field_image["und"][0]["uri"])) {
+                $imgURI = $mediaNode->field_image["und"][0]["uri"];
+                $outputIMG = file_create_url($imgURI);
+            }
+            // VIDEO
+            if (isset($mediaNode->field_youtube_video["und"][0]["video_id"])) {
+                $vidID = $mediaNode->field_youtube_video["und"][0]["video_id"];
+                $res = get_highest_quality($vidID);
+                $outputIMG = "https://i.ytimg.com/vi/" .$vidID. "/" .$res. ".jpg";
+
+            }
         }
         
-        if (isset($nodeInfo->field_field_size[0]["rendered"])) {
-            $thisMarkup = $nodeInfo->field_field_size[0]["rendered"]["#markup"];
-            $outputBIG = $thisMarkup;
-         
+        if (($outputIMG != "") && ($outputTXT != "")) {
+            $waterfallTile = "";
+            $waterfallTile .= "<div class='item views-row' data-span='" .$outputBIG. "'>";
+            $waterfallTile .= "<div class='waterfall-item-container'>";
+            $waterfallTile .= "<div class='waterfall-item-image views-field views-field-field-youtube-video views-field-field-image'><a href='" .$outputLNK. "'><img src='" .$outputIMG. "'></a></div>";
+            $waterfallTile .= "<div class='waterfall-item-content'>";
+            $waterfallTile .= "<div class='waterfall-item-icon views-field views-field-field-icon taxonomy-".$outputTAX."'><a href='" .$outputLNK. "'><img src='" .$outputSVG. "'></a></div>";
+            $waterfallTile .= "<div class='waterfall-item-title views-field views-field-title'><span><a href='" .$outputLNK. "'>" .$outputTTL. "</a></span></div>";
+            $waterfallTile .= "<div class='waterfall-item-body views-field views-field-body'><span>" .$outputTXT. "</span></div>";
+            $waterfallTile .= "</div></div></div>";
+            // ESCAPE SINGLE QUOTES
+            $waterfallTile = str_replace("'", "\'", $waterfallTile);
+            $waterfallTiles[] = $waterfallTile;
         }
         
-        if (isset($nodeInfo->field_field_page_category[0]["raw"])) {
-            $thisMarkup = $nodeInfo->field_field_page_category[0]["raw"]["tid"];
-            $outputTAX = $thisMarkup;
-        }
-        $output .= "<div class='item views-row' data-span='" .$outputBIG. "'>";
-        $output .= "<div class='waterfall-item-container'>";
-        $output .= "<div class='waterfall-item-image views-field views-field-field-youtube-video views-field-field-image'><a href='" .$outputLNK. "'><img src='" .$outputIMG. "'></a></div>";
-        $output .= "<div class='waterfall-item-content'>";
-        $output .= "<div class='waterfall-item-icon views-field views-field-field-icon taxonomy-".$outputTAX."'><a href='" .$outputLNK. "'><img src='" .$outputSVG. "'></a></div>";
-        $output .= "<div class='waterfall-item-title views-field views-field-title'><span><a href='" .$outputLNK. "'>" .$outputTTL. "</a></span></div>";
-        $output .= "<div class='waterfall-item-body views-field views-field-body'><span>" .$outputTXT. "</span></div>";
-        $output .= "</div></div></div>";
     }
-    $output .= "</div></div>";
     
-    // remove non printable characters from output
-    $output = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $output);
-    
-    // escape single quotes
-    $output = str_replace("'", "\'", $output);
+    $wrapper = "<div class=\'waterfall view view-section\'><div id=\'waterfall-wrapper\' class=\'view-content\' data-width=\'300\'>";
+    $wrapper .= "</div></div>";
 
     // ================================= ADD JAVASCRIPT =========================================
-    $jScript = " (function ($) { jQuery(document).ready(function($) { ";
+    $jScript = "\n\n (function ($) { jQuery(document).ready(function($) { ";
         // HIDE CURRENT VIEW
-        $jScript.= " $('.view').remove(); ";
-        // INSERT REBUILT VIEW
-        $jScript.= " $('" .$output. "').insertAfter('#main-content'); ";
-        // RUN WATERFALL
-        $jScript.= " $(window).load(function() { var wf = $('.view-content').waterfall(); }); ";
-        // ADJUST WHITESPACE
-        $jScript.= " function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<18){myPad=18;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
-        $jScript.= " rePadWaterfall(); ";
-        $jScript.= " $( window ).resize(function() { rePadWaterfall(); }); ";
+        $jScript.= "\n\n $('.view').remove(); ";
         
-    $jScript.= " }); }(jQuery)); ";
+        // INSERT REBUILT VIEW
+        $jScript.= "\n\n $('" .$wrapper. "').insertAfter('#main-content'); ";
+        
+        // INSERT WATERFALL ITEMS
+        foreach($waterfallTiles as $tile) { $jScript.= "\n\n $('#waterfall-wrapper').append('" .$tile. "'); "; }
+        $jScript.= "\n\n $('.waterfall-item-image img').css({'width':'100%'}); ";
+        // RUN WATERFALL
+        $jScript.= "\n\n $(window).load(function(){ $('.view-content').waterfall(); wfh = $('.view-content').height(); $('.waterfall').css({'min-height': wfh + 'px'}); }); ";
+       // ADJUST WHITESPACE
+        $jScript.= "\n\n function rePadWaterfall() { myPad = Math.floor($(window).width() * 0.03); if(myPad>30){myPad=30;} if(myPad<18){myPad=18;} $('.waterfall-item-content').css({'padding': myPad + 'px'}); } ";
+        $jScript.= "\n\n rePadWaterfall(); ";
+        $jScript.= "\n\n $( window ).resize(function() { rePadWaterfall(); }); ";
+        
+    $jScript.= "\n\n }); }(jQuery)); ";
     
     drupal_add_js($jScript, 'inline');
 

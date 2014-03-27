@@ -60,6 +60,10 @@ function financialaid_blocks_block_info(){
     'info' => t("Financial Aid Search Slider Block"),
     'cache' => DRUPAL_CACHE_GLOBAL,
   );
+  $blocks['financialaid_footer_block'] = array(
+    'info' => t("Financial Aid Footer Block"),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
   
   return $blocks;
 }
@@ -97,6 +101,10 @@ function financialaid_blocks_block_view($block_name = ""){
     case 'financialaid_search_slider_block':
       $block['subject'] = t("Financial Aid Search Slider Block");
       $block['content'] = financialaid_blocks_search_slider();
+      return $block;
+    case 'financialaid_footer_block':
+      $block['subject'] = t("Financial Aid Footer Block");
+      $block['content'] = financialaid_blocks_footer_block();
       return $block;
   }
   
@@ -162,7 +170,7 @@ function financialaid_blocks_financialaid_node_image(){
     $output = '<script src="https://www.youtube.com/iframe_api"></script>';
     $output.= '<link href="/' . $module_path . '/XSlider/anythingslider.css" rel="stylesheet">'; 
     $output.= '<script src="/' . $module_path . '/XSlider/jquery.anythingslider.min.js"></script>'; 
-    $output.= '<script src="/' . $module_path . '/XSlider/XSlider.js"></script>'; 
+    $output.= '<script src="/' . $module_path . '/XSlider/XSlider.js?' . urlencode(microtime()) . '"></script>'; 
 
     $sliderOutput = '<ul id="imageSlider">';
     if (isset($node->field_page_cover['und'])) {
@@ -245,6 +253,23 @@ function financialaid_blocks_related_sites_block(){
   $output .= '</ul>';
  
   return $output;
+}
+
+function financialaid_blocks_footer_block(){
+  $module_path = drupal_get_path('module', 'financialaid_blocks');
+  global $base_url;
+  $output ='';
+  $output .= '<ul class="financialaid-footer-block-menu clearfix">';
+  $output .= '<li><a href="#">Applications & Forms</a></li>';
+  $output .= '<li><a href="#">Financial Aid Information</a></li>';
+  $output .= '<li><a href="#">Contact Us</a></li>';
+  $output .= '<li><a href="#"><img src="'.$base_url .'/'.$module_path.'/images/FB-f-Logo__blue_100.png" /></a></li>';
+  $output .= '<li><a href="#"><img src="'.$base_url .'/'.$module_path.'/images/YouTube-social-square_red_48px.png"/></a></li>';
+  
+  $output .= '</ul>';
+  
+  return $output;
+
 }
 
 function financialaid_blocks_waterfall_block() {
